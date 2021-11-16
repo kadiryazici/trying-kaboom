@@ -1,10 +1,14 @@
 import '/src/Game';
 import '/src/Sprites/load';
 
+import { Area, AreaComp, BodyComp, Comp, CompList, KaboomCtx, PosComp, Rect } from 'kaboom';
+
 import { Tags } from '/src/Tags';
+import { createDialog } from '/src/dialogs/dialog';
 import { createPlayer } from '/src/Entities/player';
 import { tag } from '/src/components/tag';
 
+createDialog();
 addLevel(
   [
     `                       `,
@@ -48,9 +52,6 @@ const player = createPlayer();
 player.onCollide(Tags.Coin, (obj) => {
   obj.destroy();
   player.canDoubleJump = true;
-  setTimeout(() => {
-    player.canDoubleJump = false;
-  }, 3000);
 });
 
 add([
@@ -60,6 +61,41 @@ add([
   rect(width(), 50),
   pos(0, height() - 50),
   area(),
-
+  raycast(),
   solid()
 ]);
+
+interface MyComp extends Comp {
+  isRaycasting: boolean;
+  id: string;
+}
+function raycast(): MyComp {
+  return {
+    id: 'raycast',
+    require: ['area'],
+    isRaycasting: false,
+    update(this: AreaComp & MyComp) {
+      every((obj) => {
+        const targetArea = obj.area as AreaComp['area'];
+        if (targetArea) {
+          const { x: cX, y: cY } = this.area.offset!;
+          const { width, height } = this.area;
+          const currentP1 = vec2(cX, cY);
+          const currentP2 = vec2(cX + width!, cY + height!);
+
+          const tArea = obj.area as AreaComp['area'];
+          const { x: tX, y: tY } = tArea.offset!;
+          const { width: tWidth, height: tHeight } = tArea;
+          const targetP1 = vec2(tX, tY);
+          const targetP2 = vec2(tX + tWidth! + 200, tY + tHeight! + 100);
+
+          const isColliding = testRectRect(
+            { p1: currentP1, p2: currentP2 } as Rect,
+            { p1: targetP1, p2: targetP2 } as Rect
+          );
+          console.log(tArea);
+        }
+      });
+    }
+  };
+}
